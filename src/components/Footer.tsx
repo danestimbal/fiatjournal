@@ -11,8 +11,10 @@ import {
   FileText,
   DollarSign,
   Info,
+  Download,
 } from 'lucide-react';
 import { PublicPageType } from '../types';
+import { downloadAppOverviewMd } from '../utils/downloadOverview';
 
 interface FooterProps {
   onNavigatePage: (page: PublicPageType) => void;
@@ -62,6 +64,15 @@ export const Footer: React.FC<FooterProps> = ({
             className="hover:text-stone-900 dark:hover:text-stone-200 transition-colors cursor-pointer"
           >
             Contact
+          </button>
+          <button
+            id="footer-compact-download-spec"
+            onClick={downloadAppOverviewMd}
+            className="hover:text-stone-900 dark:hover:text-stone-200 transition-colors cursor-pointer inline-flex items-center space-x-1 font-medium"
+            title="Download Architecture, Cloud Leverage & Features (.md)"
+          >
+            <Download className="w-3 h-3 text-stone-400" />
+            <span>Architecture (.md)</span>
           </button>
 
           {isAdmin && onOpenAdmin && (
@@ -120,6 +131,15 @@ export const Footer: React.FC<FooterProps> = ({
             >
               <Mail className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
               <span>Contact Us</span>
+            </button>
+            <button
+              id="footer-pill-download-spec"
+              onClick={downloadAppOverviewMd}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-850 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-semibold transition-colors cursor-pointer border border-stone-200/60 dark:border-stone-750 shadow-2xs"
+              title="Download Architecture, Cloud Leverage & Features (.md)"
+            >
+              <Download className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
+              <span>Architecture (.md)</span>
             </button>
             {onOpenUpgrade && (
               <button
@@ -195,6 +215,17 @@ export const Footer: React.FC<FooterProps> = ({
                   className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors flex items-center space-x-1 cursor-pointer"
                 >
                   <span>Feature Comparison</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  id="footer-link-download-spec"
+                  onClick={downloadAppOverviewMd}
+                  className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors flex items-center space-x-1.5 cursor-pointer"
+                  title="Download Architecture, Cloud Leverage & Features as Markdown (.md)"
+                >
+                  <Download className="w-3.5 h-3.5 text-stone-400" />
+                  <span>Architecture &amp; Features (.md)</span>
                 </button>
               </li>
               {onOpenUpgrade && (

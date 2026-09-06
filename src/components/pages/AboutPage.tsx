@@ -16,8 +16,10 @@ import {
   Code2,
   Database,
   Smartphone,
+  Download,
 } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { downloadAppOverviewMd } from '../../utils/downloadOverview';
 
 interface AboutPageProps {
   currentUser?: UserProfile | null;
@@ -255,6 +257,30 @@ export const AboutPage: React.FC<AboutPageProps> = ({
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Technical Architecture & Specification Download */}
+        <div className="mt-20 p-6 rounded-2xl bg-stone-100/80 dark:bg-[#1c1c1a] border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Code2 className="w-4 h-4 text-stone-700 dark:text-stone-300" />
+              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                Application Architecture &amp; Cloud Specification
+              </h3>
+            </div>
+            <p className="text-xs text-stone-600 dark:text-stone-400 max-w-xl leading-relaxed">
+              Read how Fiat Journal leverages Firebase Authentication, Cloud Firestore, Google Cloud Run, and Gemini AI with resilient fallback ladders.
+            </p>
+          </div>
+          <button
+            id="btn-about-download-spec"
+            onClick={downloadAppOverviewMd}
+            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-stone-50 dark:text-stone-900 text-xs font-semibold transition-all cursor-pointer shadow-xs shrink-0"
+            title="Download full architectural description and feature matrix as Markdown"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Spec (.md)</span>
+          </button>
         </div>
 
         {/* Bottom CTA Banner */}
