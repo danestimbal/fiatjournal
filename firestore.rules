@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'danesensei@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // User profile and metadata
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+    
+    // User reflections and journal entries
+    match /users/{userId}/reflections/{reflectionId} {
+      allow read, write: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        (resource.data.sharedWith != null && request.auth.token.email in resource.data.sharedWith) ||
+        resource.data.isPublic == true
+      );
+    }
+
+    // User interactions and chat turns
+    match /users/{userId}/interactions/{interactionId} {
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Globally shared notes accessible by collaborators or public link
+    match /shared_notes/{noteId} {
+      allow read: if resource.data.isPublic == true || (
+        isSignedIn() && (
+          resource.data.userId == request.auth.uid ||
+          isAdmin() ||
+          (resource.data.sharedWith != null && request.auth.token.email in resource.data.sharedWith)
+        )
+      );
+      allow write: if isSignedIn() && (
+        isAdmin() ||
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && (
+          resource.data.userId == request.auth.uid ||
+          (resource.data.sharedWith != null && request.auth.token.email in resource.data.sharedWith)
+        ))
+      );
+    }
+
+    // In-app broadcast announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Support tickets
+    match /support_tickets/{ticketId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.userEmail == request.auth.token.email ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.userEmail == request.auth.token.email ||
+        isAdmin()
+      );
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.userEmail == request.auth.token.email ||
+        isAdmin()
+      );
+    }
+
+    // Admin authorization document lookup
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Public and user contact form submissions
+    match /contact_submissions/{submissionId} {
+      allow create: if request.resource.data.email is string &&
+                       request.resource.data.message is string &&
+                       request.resource.data.email.size() >= 3 &&
+                       request.resource.data.message.size() > 0;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Public site configuration and page content (Pricing, Terms, About, Contact info)
+    match /site_content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

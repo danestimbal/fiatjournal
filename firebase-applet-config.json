@@ -1,0 +1,12 @@
+{
+  "projectId": "fiatjournal",
+  "appId": "1:414812987015:web:b85a31962d50d1bae5e222",
+  "apiKey": "AIzaSyCnlOy3SK5cRZRn64XtxKj17pcmaP5GwuI",
+  "authDomain": "fiatjournal.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-journalreflectio-0d2101b5-5e47-4948-8717-dd147605767e",
+  "storageBucket": "fiatjournal.firebasestorage.app",
+  "messagingSenderId": "414812987015",
+  "measurementId": "",
+  "oAuthClientId": "414812987015-5ddhn6rv9euad94okht0v59fq0lb5nu3.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
+}

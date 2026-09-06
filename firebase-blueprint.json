@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "reflection": {
+      "title": "ReflectionSession",
+      "description": "User journal reflection and markdown note",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "folder": { "type": "string" },
+        "tags": { "type": "array" },
+        "isFavorite": { "type": "boolean" },
+        "isPinned": { "type": "boolean" },
+        "isShared": { "type": "boolean" },
+        "sharedWith": { "type": "array" },
+        "isPublic": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "title", "content", "createdAt", "updatedAt"]
+    },
+    "sharedNote": {
+      "title": "SharedNote",
+      "description": "Notes shared between users or publicly accessible with link",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "sharedWith": { "type": "array" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "title", "content", "createdAt", "updatedAt"]
+    },
+    "announcement": {
+      "title": "InAppAnnouncement",
+      "description": "System-wide or targeted in-app announcement banner or modal",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "priority": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "authorEmail": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "title", "content", "type", "createdAt"]
+    },
+    "supportTicket": {
+      "title": "SupportTicket",
+      "description": "User customer support inquiry, bug report, or billing request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "userEmail", "subject", "description", "category", "status", "createdAt"]
+    },
+    "contactSubmission": {
+      "title": "ContactSubmission",
+      "description": "Public and user contact form submissions received by sanctuary team",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "repliedAt": { "type": "number" },
+        "replyMessage": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "subject", "message", "status", "createdAt"]
+    },
+    "siteContent": {
+      "title": "SiteContent",
+      "description": "Admin configurable content for public pages: pricing, terms, about, contact",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "page": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "metadata": { "type": "object" },
+        "updatedAt": { "type": "number" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["id", "page", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/reflections/{reflectionId}": {
+      "schema": "reflection",
+      "description": "Private and shared reflection journal entries owned by user"
+    },
+    "/shared_notes/{noteId}": {
+      "schema": "sharedNote",
+      "description": "Globally indexed notes shared with specific user emails or public link"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "announcement",
+      "description": "In-app broadcast announcements manageable by administrators"
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": "supportTicket",
+      "description": "Customer support tickets submitted by users and triaged by admins"
+    },
+    "/contact_submissions/{submissionId}": {
+      "schema": "contactSubmission",
+      "description": "Inbound contact submissions manageable by administrators"
+    },
+    "/site_content/{contentId}": {
+      "schema": "siteContent",
+      "description": "Editable content for public pages (Pricing, Terms, About, Contact)"
+    }
+  }
+}

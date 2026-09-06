@@ -1,0 +1,7 @@
+{
+  "name": "Fiat Journal",
+  "description": "A mindful markdown journaling and personal reflection sanctuary powered by a context-aware Gemini AI companion and secure Firestore persistence.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
