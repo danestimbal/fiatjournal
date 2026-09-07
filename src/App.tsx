@@ -29,6 +29,7 @@ import {
   InAppAnnouncement,
   SupportTicket,
   PublicPageType,
+  SubscriptionPlan,
 } from './types';
 import { Navbar } from './components/Navbar';
 import { VaultNavigator } from './components/VaultNavigator';
@@ -49,17 +50,20 @@ import { TermsPage } from './components/pages/TermsPage';
 import { AboutPage } from './components/pages/AboutPage';
 import { ContactPage } from './components/pages/ContactPage';
 import { UpgradeModal } from './components/UpgradeModal';
+import { StorageSettingsModal } from './components/StorageSettingsModal';
 import { JournalTemplateModal } from './components/JournalTemplateModal';
 import { Footer } from './components/Footer';
 import { INITIAL_SEED_NOTES } from './data/seedNotes';
 import {
   INITIAL_ANNOUNCEMENTS,
   INITIAL_SUPPORT_TICKETS,
+  INITIAL_SUBSCRIPTION_PLANS,
 } from './data/adminSeedData';
 import {
   checkNoteCreationLimit,
   getDailyGeminiLimitStatus,
   recordGeminiCall,
+  StorageProviderType,
 } from './lib/tierLimits';
 import { FolderTree, FileText, Edit3, Sparkles } from 'lucide-react';
 
@@ -71,6 +75,20 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
+  const [activeStorageProvider, setActiveStorageProvider] = useState<StorageProviderType>(() => {
+    if (typeof localStorage !== 'undefined') {
+      return (localStorage.getItem('fiat_storage_provider') as StorageProviderType) || 'local';
+    }
+    return 'local';
+  });
+
+  const handleSelectStorageProvider = (provider: StorageProviderType) => {
+    setActiveStorageProvider(provider);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('fiat_storage_provider', provider);
+    }
+  };
 
   // Active public page (pricing, terms, about, contact)
   const [activePublicPage, setActivePublicPage] = useState<PublicPageType | null>(() => {
@@ -88,6 +106,33 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<InAppAnnouncement[]>(INITIAL_ANNOUNCEMENTS);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(INITIAL_SUPPORT_TICKETS);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+
+  // Unified Subscription Plans (Sync between Admin Panel, Public Pricing, and Upgrade Modals)
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('fiat_journal_subscription_plans');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved subscription plans', e);
+      }
+    }
+    return INITIAL_SUBSCRIPTION_PLANS;
+  });
+
+  const handleUpdateSubscriptionPlan = (updatedPlan: SubscriptionPlan) => {
+    setSubscriptionPlans((prev) => {
+      const next = prev.map((p) => (p.id === updatedPlan.id ? updatedPlan : p));
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('fiat_journal_subscription_plans', JSON.stringify(next));
+        } catch (e) {
+          console.error('Failed to persist subscription plans', e);
+        }
+      }
+      return next;
+    });
+  };
 
   // Shared note link detection (?share=<id>)
   const [sharedNoteId, setSharedNoteId] = useState<string | null>(() => {
@@ -182,12 +227,27 @@ export default function App() {
         const profile = formatUserProfile(firebaseUser);
         setLoadingAuth(false);
         if (profile) {
-          syncUserProfileOnLogin(profile).then((synced) => {
-            setUser(synced);
-          });
+          const isCurrentAdmin = isUserAdmin(profile);
+          const baseUser: UserProfile = {
+            ...profile,
+            role: isCurrentAdmin ? 'admin' : 'user',
+            subscriptionTier: isCurrentAdmin ? 'enterprise' : 'free',
+          };
+          // Immediately set user state so header, vault, and avatar reflect authentication with zero delay
+          setUser(baseUser);
           if (!sharedNoteId && viewMode !== 'admin') {
             setViewMode('vault');
           }
+
+          // Background sync with Firestore database (does not block immediate interactive use)
+          syncUserProfileOnLogin(baseUser)
+            .then((synced) => {
+              setUser(synced);
+            })
+            .catch((err) => {
+              console.warn('Background profile sync non-fatal:', err);
+            });
+
           // Check if this user needs to see the onboarding tutorial
           const localKey = `fiat_onboarding_completed_${profile.uid}`;
           const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(localKey) : null;
@@ -258,10 +318,13 @@ export default function App() {
         }
       },
       (error) => {
-        console.error('Firestore vault sync error:', error);
-        setErrorMessage(
-          'Could not synchronize notes from Cloud Firestore. Working in local session.'
-        );
+        console.warn('Firestore vault sync temporary state:', error);
+        // If it's a transient connection/unavailable notice, Firestore operates in offline cache automatically
+        if ((error as any)?.code !== 'unavailable') {
+          setErrorMessage(
+            'Could not synchronize notes from Cloud Firestore. Working in local session.'
+          );
+        }
       }
     );
 
@@ -799,6 +862,21 @@ export default function App() {
     setIsAuthModalOpen(true);
   };
 
+  const handleGuestAccess = () => {
+    const guestUser: UserProfile = {
+      uid: 'guest',
+      email: 'guest@fiat.app',
+      displayName: 'Guest Journaler',
+      photoURL: null,
+      role: 'user',
+      subscriptionTier: 'free',
+    };
+    setUser(guestUser);
+    setIsAuthModalOpen(false);
+    setActivePublicPage(null);
+    setViewMode('vault');
+  };
+
   const handleCompleteOnboarding = async () => {
     setShowOnboarding(false);
     if (user?.uid) {
@@ -905,6 +983,7 @@ export default function App() {
         isAdmin={isAdmin}
         onOpenSupport={() => setIsSupportModalOpen(true)}
         onOpenUpgrade={() => setIsUpgradeModalOpen(true)}
+        onOpenStorageSettings={() => setIsStorageModalOpen(true)}
         onNavigatePage={handleNavigateToPublicPage}
         onNewJournal={handleCreateNewNote}
         onOpenTutorial={() => {
@@ -946,6 +1025,12 @@ export default function App() {
             {activePublicPage === 'pricing' && (
               <PricingPage
                 currentUser={user}
+                plans={subscriptionPlans}
+                isAdmin={user?.role === 'admin' || (!user && true)}
+                onOpenAdminPricing={() => {
+                  handleBackFromPublicPage();
+                  setViewMode('admin');
+                }}
                 onSelectPlan={(tier) => {
                   if (tier === 'free') {
                     handleBackFromPublicPage();
@@ -995,6 +1080,8 @@ export default function App() {
                 subscriptionTier: 'enterprise',
               }
             }
+            plans={subscriptionPlans}
+            onUpdatePlan={handleUpdateSubscriptionPlan}
             onExitAdmin={() => setViewMode('vault')}
             onOpenPublicPage={handleNavigateToPublicPage}
           />
@@ -1037,6 +1124,7 @@ export default function App() {
                   setActivePublicPage(null);
                   setViewMode('admin');
                 }}
+                onOpenStorageSettings={() => setIsStorageModalOpen(true)}
               />
             )}
 
@@ -1114,6 +1202,7 @@ export default function App() {
                   setActivePublicPage(null);
                   setViewMode('admin');
                 }}
+                onOpenStorageSettings={() => setIsStorageModalOpen(true)}
               />
             )}
 
@@ -1268,6 +1357,7 @@ export default function App() {
           setIsAuthModalOpen(false);
           setViewMode('vault');
         }}
+        onGuestAccess={handleGuestAccess}
       />
 
       {/* Interactive Onboarding Tutorial Modal */}
@@ -1299,7 +1389,12 @@ export default function App() {
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
         currentUser={user}
+        plans={subscriptionPlans}
         onUpgradeSuccess={handleUpgradeUserPlan}
+        onNavigateToPricingPage={() => {
+          setIsUpgradeModalOpen(false);
+          handleNavigateToPublicPage('pricing');
+        }}
       />
 
       {/* Journal Reflection Template Selector Modal */}
@@ -1309,6 +1404,21 @@ export default function App() {
         currentFolder={activeView}
         customFolders={customFolders}
         onCreateJournal={handleCreateJournalFromTemplate}
+      />
+
+      {/* Storage Architecture & Google Drive BYOS Modal */}
+      <StorageSettingsModal
+        isOpen={isStorageModalOpen}
+        onClose={() => setIsStorageModalOpen(false)}
+        currentUser={user}
+        activeStorageProvider={activeStorageProvider}
+        onSelectStorageProvider={handleSelectStorageProvider}
+        notes={notes}
+        onTriggerUpgrade={(reason) => {
+          setIsStorageModalOpen(false);
+          setErrorMessage(reason);
+          setIsUpgradeModalOpen(true);
+        }}
       />
     </div>
   );

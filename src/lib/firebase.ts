@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import {
   getFirestore,
+  initializeFirestore,
   collection,
   doc,
   getDoc,
@@ -49,11 +50,26 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Initialize Cloud Firestore with custom Database ID
-export const db: Firestore = getFirestore(
-  app,
-  firebaseConfig.firestoreDatabaseId || '(default)'
-);
+// In-memory access token cache for Google Drive (Do NOT store in localStorage/sessionStorage)
+let cachedDriveAccessToken: string | null = null;
+
+export function getCachedDriveAccessToken(): string | null {
+  return cachedDriveAccessToken;
+}
+
+export function setCachedDriveAccessToken(token: string | null): void {
+  cachedDriveAccessToken = token;
+}
+
+// Initialize Cloud Firestore with force long-polling for resilient proxy, Cloud Run, and iframe connectivity
+const firestoreSettings = {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
+};
+
+export const db: Firestore = (firebaseConfig as any).firestoreDatabaseId
+  ? initializeFirestore(app, firestoreSettings, (firebaseConfig as any).firestoreDatabaseId)
+  : initializeFirestore(app, firestoreSettings);
 
 /**
  * Strict Undefined-Stripping (Zero-Crash Payload Hygiene)
@@ -68,10 +84,37 @@ export function sanitizeForFirestore<T>(data: T): T {
 // Authentication Actions
 export async function signInWithGoogle(): Promise<User> {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      cachedDriveAccessToken = credential.accessToken;
+    }
     return result.user;
   } catch (error: any) {
     console.error('Sign-in error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Explicitly connect or re-authenticate Google Drive access
+ */
+export async function connectGoogleDriveAccount(): Promise<string> {
+  try {
+    const driveProvider = new GoogleAuthProvider();
+    driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
+    driveProvider.setCustomParameters({ prompt: 'consent' });
+    const result = await signInWithPopup(auth, driveProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (!credential?.accessToken) {
+      throw new Error('Failed to retrieve Google Drive authorization token.');
+    }
+    cachedDriveAccessToken = credential.accessToken;
+    return cachedDriveAccessToken;
+  } catch (error: any) {
+    console.error('Failed to connect Google Drive:', error);
     throw error;
   }
 }
@@ -117,6 +160,7 @@ export async function sendPasswordReset(email: string): Promise<void> {
 
 export async function logOut(): Promise<void> {
   try {
+    cachedDriveAccessToken = null;
     await signOut(auth);
   } catch (error: any) {
     console.error('Sign-out error:', error);

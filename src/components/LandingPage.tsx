@@ -85,6 +85,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <span>Sign In</span>
               </button>
+              <button
+                id="landing-hero-explore-guest"
+                onClick={onExploreVault}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium text-sm transition-all border border-stone-200 cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <span>Try Demo Vault</span>
+              </button>
               <PWAInstallButton variant="hero" />
             </>
           )}

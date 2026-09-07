@@ -67,8 +67,11 @@ export interface AdminUser {
 
 export interface SubscriptionPlan {
   id: string;
+  tierKey: 'free' | 'pro' | 'enterprise';
   name: string;
   price: number;
+  monthlyPrice: number;
+  annualPrice: number;
   billingPeriod: 'month' | 'year';
   badge?: string;
   description: string;
@@ -76,6 +79,7 @@ export interface SubscriptionPlan {
   features: string[];
   geminiQuota: string;
   storageLimit: string;
+  isPublished?: boolean;
 }
 
 export interface SubscriptionTransaction {

@@ -19,6 +19,7 @@ import {
   SupportTicketReply,
   UserProfile,
   PublicPageType,
+  SubscriptionPlan,
 } from '../../types';
 import {
   fetchAdminUsers,
@@ -39,6 +40,7 @@ import {
   INITIAL_ADMIN_USERS,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_SUPPORT_TICKETS,
+  INITIAL_SUBSCRIPTION_PLANS,
 } from '../../data/adminSeedData';
 
 interface AdminPanelProps {
@@ -46,6 +48,8 @@ interface AdminPanelProps {
   onExitAdmin: () => void;
   initialTab?: AdminTab;
   onOpenPublicPage?: (page: PublicPageType) => void;
+  plans?: SubscriptionPlan[];
+  onUpdatePlan?: (plan: SubscriptionPlan) => void;
 }
 
 type AdminTab = 'users' | 'subscriptions' | 'announcements' | 'support' | 'pages';
@@ -55,6 +59,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onExitAdmin,
   initialTab,
   onOpenPublicPage,
+  plans,
+  onUpdatePlan,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab || 'users');
   const [users, setUsers] = useState<AdminUser[]>(INITIAL_ADMIN_USERS);
@@ -416,7 +422,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {activeTab === 'subscriptions' && (
-          <SubscriptionsTab users={users} onUpgradeUserPlan={handleUpgradeUserPlan} />
+          <SubscriptionsTab
+            users={users}
+            onUpgradeUserPlan={handleUpgradeUserPlan}
+            plans={plans}
+            onUpdatePlan={(updatedPlan) => {
+              if (onUpdatePlan) onUpdatePlan(updatedPlan);
+              showToast(`Plan '${updatedPlan.name}' successfully updated and synchronized.`);
+            }}
+          />
         )}
 
         {activeTab === 'announcements' && (
@@ -440,6 +454,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <PublicPagesAdminTab
             users={users}
             onOpenPublicPage={onOpenPublicPage || (() => {})}
+            plans={plans}
+            onUpdatePlan={(updatedPlan) => {
+              if (onUpdatePlan) onUpdatePlan(updatedPlan);
+              showToast(`Plan '${updatedPlan.name}' successfully updated and synchronized across public pages.`);
+            }}
             onBroadcastAnnouncement={async (title, content) => {
               await handleCreateAnnouncement({
                 title,

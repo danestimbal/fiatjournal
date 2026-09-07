@@ -19,6 +19,7 @@ import {
   Building,
   UserCheck,
   Megaphone,
+  Settings2,
 } from 'lucide-react';
 import {
   ContactSubmission,
@@ -31,12 +32,15 @@ import {
   updateContactSubmissionStatus,
 } from '../../lib/firebase';
 import { INITIAL_SUBSCRIPTION_PLANS } from '../../data/adminSeedData';
+import { EditPlanModal } from './EditPlanModal';
 
 interface PublicPagesAdminTabProps {
   users: AdminUser[];
   onOpenPublicPage: (page: PublicPageType) => void;
   onBroadcastAnnouncement?: (title: string, content: string) => Promise<void>;
   onUpgradeUserPlan: (userId: string, tier: 'pro' | 'enterprise') => Promise<void>;
+  plans?: SubscriptionPlan[];
+  onUpdatePlan?: (plan: SubscriptionPlan) => void;
 }
 
 export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
@@ -44,8 +48,26 @@ export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
   onOpenPublicPage,
   onBroadcastAnnouncement,
   onUpgradeUserPlan,
+  plans,
+  onUpdatePlan,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<PublicPageType>('pricing');
+  const [localPlans, setLocalPlans] = useState<SubscriptionPlan[]>(plans || INITIAL_SUBSCRIPTION_PLANS);
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (plans && plans.length > 0) {
+      setLocalPlans(plans);
+    }
+  }, [plans]);
+
+  const handleSavePlan = (updatedPlan: SubscriptionPlan) => {
+    setLocalPlans((prev) => prev.map((p) => (p.id === updatedPlan.id ? updatedPlan : p)));
+    if (onUpdatePlan) {
+      onUpdatePlan(updatedPlan);
+    }
+  };
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null);
@@ -280,7 +302,7 @@ export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
 
           {/* Pricing Plans List */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {INITIAL_SUBSCRIPTION_PLANS.map((plan) => (
+            {localPlans.map((plan) => (
               <div
                 key={plan.id}
                 className="p-5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 flex flex-col justify-between"
@@ -294,9 +316,16 @@ export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
                       {plan.badge}
                     </span>
                   </div>
-                  <div className="mt-2 text-xl font-bold text-stone-900 dark:text-stone-100 font-mono">
-                    ${plan.price}
-                    <span className="text-xs font-normal text-stone-500">/{plan.billingPeriod}</span>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <div className="text-xl font-bold text-stone-900 dark:text-stone-100 font-mono">
+                      ${plan.monthlyPrice !== undefined ? plan.monthlyPrice : plan.price}
+                      <span className="text-xs font-normal text-stone-500">/month</span>
+                    </div>
+                    {(plan.annualPrice !== undefined ? plan.annualPrice : 0) > 0 && (
+                      <span className="text-xs text-stone-500 font-mono">
+                        (${plan.annualPrice}/year)
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-stone-500 mt-1">{plan.description}</p>
 
@@ -327,16 +356,34 @@ export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
                 </div>
 
                 <div className="mt-5 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                  <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Published to Public
-                  </span>
-                  <button
-                    onClick={() => onOpenPublicPage('pricing')}
-                    className="text-xs font-semibold text-stone-700 dark:text-stone-300 hover:underline cursor-pointer"
+                  <span
+                    className={`text-[11px] font-medium flex items-center gap-1 ${
+                      plan.isPublished !== false ? 'text-emerald-600' : 'text-stone-400'
+                    }`}
                   >
-                    View Card &rarr;
-                  </button>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {plan.isPublished !== false ? 'Published to Public' : 'Draft / Hidden'}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      id={`btn-admin-edit-plan-${plan.id}`}
+                      onClick={() => {
+                        setEditingPlan(plan);
+                        setIsEditModalOpen(true);
+                      }}
+                      className="inline-flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 transition-colors cursor-pointer border border-stone-200 dark:border-stone-700"
+                    >
+                      <Settings2 className="w-3 h-3 text-stone-500" />
+                      <span>Edit Plan</span>
+                    </button>
+                    <button
+                      id={`btn-view-card-${plan.id}`}
+                      onClick={() => onOpenPublicPage('pricing')}
+                      className="text-xs font-semibold text-stone-700 dark:text-stone-300 hover:underline cursor-pointer"
+                    >
+                      View Card &rarr;
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -667,6 +714,16 @@ export const PublicPagesAdminTab: React.FC<PublicPagesAdminTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Edit Plan Modal */}
+      <EditPlanModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        plan={editingPlan}
+        onSave={handleSavePlan}
+        allPlans={localPlans}
+        onSelectPlan={(p) => setEditingPlan(p)}
+      />
     </div>
   );
 };

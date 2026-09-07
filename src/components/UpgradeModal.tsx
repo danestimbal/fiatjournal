@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   Lock,
 } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, SubscriptionPlan } from '../types';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -19,6 +19,8 @@ interface UpgradeModalProps {
   onUpgradeTier?: (tier: 'free' | 'pro' | 'enterprise') => Promise<void>;
   onUpgradeSuccess?: (tier: 'free' | 'pro' | 'enterprise') => Promise<void>;
   onNavigateToPricingPage?: () => void;
+  plans?: SubscriptionPlan[];
+  upgradeReason?: string;
 }
 
 export const UpgradeModal: React.FC<UpgradeModalProps> = ({
@@ -28,6 +30,8 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   onUpgradeTier,
   onUpgradeSuccess,
   onNavigateToPricingPage,
+  plans,
+  upgradeReason,
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -36,6 +40,12 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   if (!isOpen) return null;
 
   const currentTier = currentUser?.subscriptionTier || 'free';
+
+  const proPlan = plans?.find((p) => p.tierKey === 'pro' || p.id === 'plan_pro');
+  const enterprisePlan = plans?.find((p) => p.tierKey === 'enterprise' || p.id === 'plan_enterprise');
+
+  const proPrice = billingCycle === 'annual' ? (proPlan?.annualPrice ?? 99) : (proPlan?.monthlyPrice ?? 12);
+  const enterprisePrice = billingCycle === 'annual' ? (enterprisePlan?.annualPrice ?? 240) : (enterprisePlan?.monthlyPrice ?? 29);
 
   const handleSelectUpgrade = async (tier: 'free' | 'pro' | 'enterprise') => {
     setIsProcessing(true);
@@ -102,6 +112,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 . Instant activation, zero lock-in, and full data privacy.
               </p>
 
+              {upgradeReason && (
+                <div className="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs text-left flex items-start space-x-2">
+                  <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <span>{upgradeReason}</span>
+                </div>
+              )}
+
               {/* Billing Toggle */}
               <div className="mt-4 inline-flex items-center p-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-[11px] font-medium border border-stone-200 dark:border-stone-700">
                 <button
@@ -141,21 +158,25 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                      Pro Mindful
+                      {proPlan?.name || 'Pro Mindful'}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
-                      Most Popular
+                      {proPlan?.badge || 'Most Popular'}
                     </span>
                   </div>
 
                   <div className="mt-2 text-2xl font-extrabold text-stone-900 dark:text-stone-50 font-mono">
-                    ${billingCycle === 'annual' ? '99' : '12'}
+                    ${proPrice}
                     <span className="text-xs font-normal text-stone-500 font-sans ml-1">
                       {billingCycle === 'annual' ? '/ year' : '/ month'}
                     </span>
                   </div>
 
                   <ul className="mt-4 space-y-2 text-xs text-stone-600 dark:text-stone-300">
+                    <li className="flex items-center space-x-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="font-semibold text-stone-900 dark:text-stone-100">Fiat Managed Cloud Storage (Multi-Device Sync)</span>
+                    </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>Unlimited reflections &amp; folders</span>
@@ -204,15 +225,15 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                      Team Sanctuary
+                      {enterprisePlan?.name || 'Team Sanctuary'}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
-                      Organizations
+                      {enterprisePlan?.badge || 'Organizations'}
                     </span>
                   </div>
 
                   <div className="mt-2 text-2xl font-extrabold text-stone-900 dark:text-stone-50 font-mono">
-                    ${billingCycle === 'annual' ? '240' : '29'}
+                    ${enterprisePrice}
                     <span className="text-xs font-normal text-stone-500 font-sans ml-1">
                       {billingCycle === 'annual' ? '/ year' : '/ month'}
                     </span>

@@ -24,6 +24,7 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: 'signin' | 'register';
   onSuccess?: () => void;
+  onGuestAccess?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -31,6 +32,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = 'signin',
   onSuccess,
+  onGuestAccess,
 }) => {
   const [mode, setMode] = useState<'signin' | 'register' | 'forgot'>(initialMode);
   const [displayName, setDisplayName] = useState('');
@@ -68,6 +70,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const parseAuthError = (err: any): string => {
     const code = err?.code || '';
     switch (code) {
+      case 'auth/popup-blocked':
+        return 'The Google Sign-In popup was blocked by your browser. Please allow popups for this site, open the app in a separate browser tab, or use Guest mode below.';
+      case 'auth/popup-closed-by-user':
+        return 'The Google sign-in window was closed before finishing. Please click below to try again.';
+      case 'auth/cancelled-popup-request':
+        return 'A sign-in request is already in progress. Please check your open windows.';
+      case 'auth/unauthorized-domain':
+        return 'This preview domain is pending domain authorization in Firebase. Click "Continue as Guest" below to start journaling right away.';
+      case 'auth/operation-not-allowed':
+        return 'Email/Password accounts are disabled on this project. Please click "Continue with Google" or "Continue as Guest" below.';
       case 'auth/email-already-in-use':
         return 'An account with this email address already exists. Please sign in instead.';
       case 'auth/invalid-email':
@@ -80,12 +92,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return 'Invalid email or password. Please verify your credentials and try again.';
       case 'auth/too-many-requests':
         return 'Access to this account has been temporarily disabled due to many failed attempts. Please try again later or reset your password.';
-      case 'auth/popup-closed-by-user':
-        return 'Google sign-in popup was closed before completing. Please try again.';
       case 'auth/network-request-failed':
         return 'Network connection issue. Please check your internet connection.';
       default:
-        return err?.message || 'An unexpected authentication error occurred. Please try again.';
+        return err?.message || 'An unexpected authentication error occurred. Please try again or continue as Guest.';
     }
   };
 
@@ -499,6 +509,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Instant Guest / Offline Vault Access */}
+          {onGuestAccess && (
+            <div className="pt-2 border-t border-stone-100 dark:border-stone-800/80 text-center">
+              <button
+                id="btn-auth-guest-access"
+                type="button"
+                onClick={onGuestAccess}
+                className="text-xs text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 font-medium transition-colors cursor-pointer inline-flex items-center gap-1 hover:underline underline-offset-2"
+              >
+                <span>Continue as Guest (No account needed)</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           )}
 

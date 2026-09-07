@@ -85,3 +85,46 @@ export function canAccessCollaboratorSharing(tier: SubscriptionTier | undefined)
 export function canAccessRichExports(tier: SubscriptionTier | undefined): boolean {
   return tier === 'pro' || tier === 'enterprise';
 }
+
+/**
+ * Access Control for App-Hosted Cloud Storage (Firebase)
+ * Free users Bring Their Own Storage (Google Drive or Local).
+ * App Managed Cloud Storage requires Pro or Enterprise upgrade.
+ */
+export function canAccessAppCloudStorage(tier: SubscriptionTier | undefined): boolean {
+  return tier === 'pro' || tier === 'enterprise';
+}
+
+export type StorageProviderType = 'google_drive' | 'local' | 'fiat_cloud';
+
+export interface StorageProviderOption {
+  id: StorageProviderType;
+  name: string;
+  badge: string;
+  description: string;
+  requiresUpgrade: boolean;
+}
+
+export const STORAGE_PROVIDER_OPTIONS: StorageProviderOption[] = [
+  {
+    id: 'google_drive',
+    name: 'Personal Google Drive',
+    badge: 'FREE • BYOS',
+    description: 'Your journals live directly in your personal Google Drive in a dedicated "Fiat Journal" folder as open Markdown (.md) files.',
+    requiresUpgrade: false,
+  },
+  {
+    id: 'local',
+    name: 'Local Device Storage',
+    badge: 'FREE • OFFLINE',
+    description: 'Store notes securely on this device with zero external cloud dependencies.',
+    requiresUpgrade: false,
+  },
+  {
+    id: 'fiat_cloud',
+    name: 'Fiat Managed Cloud Storage',
+    badge: 'PRO REQUIRED',
+    description: 'Zero-setup instant multi-device synchronization, real-time revision history, and collaborative note sharing.',
+    requiresUpgrade: true,
+  },
+];

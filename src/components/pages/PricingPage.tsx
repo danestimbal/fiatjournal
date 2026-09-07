@@ -14,7 +14,7 @@ import {
   ArrowLeft,
   Lock,
 } from 'lucide-react';
-import { UserProfile } from '../../types';
+import { UserProfile, SubscriptionPlan } from '../../types';
 
 interface PricingPageProps {
   currentUser: UserProfile | null;
@@ -24,6 +24,7 @@ interface PricingPageProps {
   onOpenContact?: () => void;
   isAdmin?: boolean;
   onOpenAdminPricing?: () => void;
+  plans?: SubscriptionPlan[];
 }
 
 export const PricingPage: React.FC<PricingPageProps> = ({
@@ -34,24 +35,29 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   onOpenContact,
   isAdmin = false,
   onOpenAdminPricing,
+  plans,
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const currentTier = currentUser?.subscriptionTier || 'free';
 
-  const plans = [
+  const freePlan = plans?.find((p) => p.tierKey === 'free' || p.id === 'plan_free');
+  const proPlan = plans?.find((p) => p.tierKey === 'pro' || p.id === 'plan_pro');
+  const enterprisePlan = plans?.find((p) => p.tierKey === 'enterprise' || p.id === 'plan_enterprise');
+
+  const displayedPlans = [
     {
       id: 'free' as const,
-      name: 'Free Sanctuary',
-      badge: 'Starter',
-      description: 'Essential private journaling and mindful reflection tools.',
-      monthlyPrice: 0,
-      annualPrice: 0,
-      features: [
+      name: freePlan?.name || 'Free Sanctuary',
+      badge: freePlan?.badge || 'Starter',
+      description: freePlan?.description || 'Essential private journaling and mindful reflection tools.',
+      monthlyPrice: freePlan?.monthlyPrice ?? 0,
+      annualPrice: freePlan?.annualPrice ?? 0,
+      features: freePlan?.features && freePlan.features.length > 0 ? freePlan.features : [
+        'Bring Your Own Storage (Google Drive & Local)',
         '50 active notes & unlimited folders',
         'Gemini 3.6 Flash partner (25 prompts/day)',
-        'Local-first storage & Firestore backup',
         'Offline PWA progressive web app support',
         'Standard Markdown export (Raw .md)',
         'Community support sanctuary',
@@ -61,12 +67,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     },
     {
       id: 'pro' as const,
-      name: 'Pro Mindful',
-      badge: 'Most Popular',
-      description: 'Deep cognitive journaling with unlimited Gemini AI and rich insights.',
-      monthlyPrice: 12,
-      annualPrice: 99,
-      features: [
+      name: proPlan?.name || 'Pro Mindful',
+      badge: proPlan?.badge || 'Most Popular',
+      description: proPlan?.description || 'Deep cognitive journaling with unlimited Gemini AI and rich insights.',
+      monthlyPrice: proPlan?.monthlyPrice ?? 12,
+      annualPrice: proPlan?.annualPrice ?? 99,
+      features: proPlan?.features && proPlan.features.length > 0 ? proPlan.features : [
+        'Fiat Managed Cloud Storage (Multi-Device Sync)',
         'Everything in Free Sanctuary',
         'Unlimited notes & nested folders',
         'Unlimited Gemini 3.6 Flash & Fallback ladder',
@@ -80,12 +87,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     },
     {
       id: 'enterprise' as const,
-      name: 'Team Sanctuary',
-      badge: 'Teams & Orgs',
-      description: 'Collaborative workspaces for executive reflection, teams, and coaching.',
-      monthlyPrice: 29,
-      annualPrice: 240,
-      features: [
+      name: enterprisePlan?.name || 'Team Sanctuary',
+      badge: enterprisePlan?.badge || 'Teams & Orgs',
+      description: enterprisePlan?.description || 'Collaborative workspaces for executive reflection, teams, and coaching.',
+      monthlyPrice: enterprisePlan?.monthlyPrice ?? 29,
+      annualPrice: enterprisePlan?.annualPrice ?? 240,
+      features: enterprisePlan?.features && enterprisePlan.features.length > 0 ? enterprisePlan.features : [
         'Everything in Pro Mindful',
         'Multi-member collaborative team workspaces',
         'Custom workspace domains & branding',
@@ -100,6 +107,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   ];
 
   const faqs = [
+    {
+      q: 'How does Bring Your Own Storage (Google Drive) work on the Free plan?',
+      a: 'Free users can connect their personal Google Drive with a single click. Fiat Journal creates a dedicated "Fiat Journal" folder on your Google Drive and saves your notes as open Markdown (.md) files. You own your data with zero hosting costs, while Pro users get Fiat Managed Cloud Storage for instant multi-device sync without setup.',
+    },
     {
       q: 'Will my private notes ever be used to train AI models?',
       a: 'Never. Fiat Journal operates under a zero-training pledge. All Gemini API calls use stateless, zero-retention enterprise inference endpoints. Your thoughts, journals, and reflections remain 100% yours.',
@@ -200,7 +211,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
         {/* Pricing Cards Grid */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          {plans.map((plan) => {
+          {displayedPlans.map((plan) => {
             const isCurrent = currentUser && currentTier === plan.id;
             const price = billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice;
             const periodLabel = billingCycle === 'annual' ? '/ year' : '/ month';

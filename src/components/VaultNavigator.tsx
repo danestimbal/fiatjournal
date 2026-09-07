@@ -26,9 +26,9 @@ import {
   Zap,
   ArrowUpRight,
   ExternalLink,
+  HardDrive,
 } from 'lucide-react';
 import { ReflectionSession, UserProfile, PublicPageType } from '../types';
-import { ThemeToggle } from './ThemeToggle';
 import { exportVaultAsZip } from '../lib/exportUtils';
 import { canAccessRichExports } from '../lib/tierLimits';
 
@@ -48,6 +48,7 @@ interface VaultNavigatorProps {
   onNavigatePage?: (page: PublicPageType) => void;
   isAdmin?: boolean;
   onOpenAdmin?: () => void;
+  onOpenStorageSettings?: () => void;
 }
 
 export const VaultNavigator: React.FC<VaultNavigatorProps> = ({
@@ -66,6 +67,7 @@ export const VaultNavigator: React.FC<VaultNavigatorProps> = ({
   onNavigatePage,
   isAdmin = false,
   onOpenAdmin,
+  onOpenStorageSettings,
 }) => {
   const [viewsExpanded, setViewsExpanded] = useState(true);
   const [typesExpanded, setTypesExpanded] = useState(true);
@@ -675,135 +677,37 @@ export const VaultNavigator: React.FC<VaultNavigatorProps> = ({
         </div>
       )}
 
-      {/* Dashboard Upgrade Card */}
-      <div className="p-2.5 border-t border-[#E8E8E6] dark:border-[#2e2e2a] bg-[#FBFBFA] dark:bg-[#151513]">
-        {currentUser?.subscriptionTier === 'pro' ? (
-          <div className="p-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 flex items-center justify-between">
-            <div className="flex items-center space-x-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                Pro Mindful
-              </span>
-            </div>
-            {onOpenUpgradeModal && (
-              <button
-                onClick={onOpenUpgradeModal}
-                className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer"
-              >
-                Manage
-              </button>
-            )}
-          </div>
-        ) : currentUser?.subscriptionTier === 'enterprise' ? (
-          <div className="p-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 flex items-center justify-between">
-            <div className="flex items-center space-x-1.5">
-              <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                Team Sanctuary
-              </span>
-            </div>
-            {onOpenUpgradeModal && (
-              <button
-                onClick={onOpenUpgradeModal}
-                className="text-[10px] font-semibold text-indigo-800 dark:text-indigo-300 hover:underline cursor-pointer"
-              >
-                Manage
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-stone-100 to-amber-50/50 dark:from-stone-900 dark:to-amber-950/20 border border-stone-200 dark:border-stone-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-300">
-                Free Sanctuary
-              </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
-                STARTER
-              </span>
-            </div>
-            
-            {/* Note storage limit meter */}
-            <div>
-              <div className="flex items-center justify-between text-[10px] text-stone-600 dark:text-stone-400 mb-1">
-                <span>Reflection Notes</span>
-                <span className="font-mono font-medium">{notes.length} / 50</span>
-              </div>
-              <div className="w-full bg-stone-200 dark:bg-stone-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    notes.length >= 50 ? 'bg-rose-500' : notes.length >= 40 ? 'bg-amber-500' : 'bg-blue-500'
-                  }`}
-                  style={{ width: `${Math.min(100, (notes.length / 50) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {onOpenUpgradeModal && (
-              <button
-                id="btn-dashboard-sidebar-upgrade"
-                onClick={onOpenUpgradeModal}
-                className="w-full py-1.5 px-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 dark:bg-amber-400 dark:hover:bg-amber-300 text-stone-100 dark:text-stone-950 text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>Upgrade to Pro</span>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Footer Navigation Links */}
-        {onNavigatePage && (
-          <div className="pt-2 flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 px-0.5">
+      {/* Vault Footer Info */}
+      <div className="p-2.5 border-t border-[#E8E8E6] dark:border-[#2e2e2a] bg-[#F5F5F3] dark:bg-[#181816] flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400 px-3 transition-colors">
+        <div className="flex items-center space-x-1.5">
+          {onOpenStorageSettings ? (
             <button
-              onClick={() => onNavigatePage('pricing')}
-              className="hover:text-stone-900 dark:hover:text-stone-200 cursor-pointer"
+              id="vault-footer-storage-btn"
+              type="button"
+              onClick={onOpenStorageSettings}
+              className="flex items-center space-x-1.5 text-stone-700 dark:text-stone-300 hover:text-amber-700 dark:hover:text-amber-400 font-medium transition-colors cursor-pointer"
+              title="Storage & Google Drive Settings"
             >
-              Pricing
+              <HardDrive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Google Drive</span>
             </button>
-            <span>&bull;</span>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
+              <span className="font-medium text-stone-700 dark:text-stone-300">Fiat Journal</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          {isAdmin && onOpenAdmin && (
             <button
-              onClick={() => onNavigatePage('terms')}
-              className="hover:text-stone-900 dark:hover:text-stone-200 cursor-pointer"
+              onClick={onOpenAdmin}
+              className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
             >
-              Terms
+              Admin
             </button>
-            <span>&bull;</span>
-            <button
-              onClick={() => onNavigatePage('about')}
-              className="hover:text-stone-900 dark:hover:text-stone-200 cursor-pointer"
-            >
-              About
-            </button>
-            <span>&bull;</span>
-            <button
-              onClick={() => onNavigatePage('contact')}
-              className="hover:text-stone-900 dark:hover:text-stone-200 cursor-pointer"
-            >
-              Contact
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Vault Footer Info with Theme Toggle */}
-      <div className="p-2 border-t border-[#E8E8E6] dark:border-[#2e2e2a] bg-[#F5F5F3] dark:bg-[#181816] flex flex-col space-y-1.5 transition-colors">
-        <ThemeToggle variant="sidebar" />
-        <div className="flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400 px-1 pt-1 border-t border-stone-200/50 dark:border-stone-800/60">
-          <div className="flex items-center space-x-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
-            <span>Fiat Journal</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            {isAdmin && onOpenAdmin && (
-              <button
-                onClick={onOpenAdmin}
-                className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-              >
-                Admin
-              </button>
-            )}
-            <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{notes.length} notes</span>
-          </div>
+          )}
+          <span className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{notes.length} notes</span>
         </div>
       </div>
     </aside>
